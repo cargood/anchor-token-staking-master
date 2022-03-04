@@ -2,14 +2,21 @@ import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { XTokenStake } from "../../target/types/x_token_stake";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import {
+  PublicKey,
+  Keypair,
+  TransactionSignature,
+  SYSVAR_RENT_PUBKEY,
+  SystemProgram,
+} from "@solana/web3.js";
 
 const VAULT_SEED = "x_token_vault";
 
 export class Vault {
   constructor(
     public program: anchor.Program<XTokenStake>,
-    public key: anchor.web3.PublicKey,
-    public mint: anchor.web3.PublicKey,
+    public key: PublicKey,
+    public mint: PublicKey,
     public mintCount: number,
     public rewardDuration: number
   ) {}
@@ -21,12 +28,12 @@ export class Vault {
   }
 
   static async getRewardBumpResult(
-    vault: anchor.web3.PublicKey,
-    authority: anchor.web3.PublicKey,
-    mint: anchor.web3.PublicKey,
+    vault: PublicKey,
+    authority: PublicKey,
+    mint: PublicKey,
     program: Program<XTokenStake>
-  ): Promise<[anchor.web3.PublicKey, number]> {
-    return await anchor.web3.PublicKey.findProgramAddress(
+  ): Promise<[PublicKey, number]> {
+    return await PublicKey.findProgramAddress(
       [
         Buffer.from(VAULT_SEED),
         vault.toBuffer(),
@@ -38,20 +45,20 @@ export class Vault {
   }
 
   static async create({
-    vaultKey = anchor.web3.Keypair.generate(),
+    vaultKey = Keypair.generate(),
     program,
     mint,
     duration,
     mintCount,
   }: {
-    vaultKey?: anchor.web3.Keypair;
+    vaultKey?: Keypair;
     program: anchor.Program<XTokenStake>;
-    mint: anchor.web3.PublicKey;
+    mint: PublicKey;
     duration: number;
     mintCount: number;
   }): Promise<{
     vault: Vault;
-    sig: anchor.web3.TransactionSignature;
+    sig: TransactionSignature;
   }> {
     const [rewardMintAccount, rewardBump] = await this.getRewardBumpResult(
       vaultKey.publicKey,
@@ -69,9 +76,9 @@ export class Vault {
           vault: vaultKey.publicKey,
           rewardMint: mint,
           rewardAccount: rewardMintAccount,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          rent: SYSVAR_RENT_PUBKEY,
           tokenProgram: TOKEN_PROGRAM_ID,
-          systemProgram: anchor.web3.SystemProgram.programId,
+          systemProgram: SystemProgram.programId,
         },
         signers: [vaultKey],
         options: {
@@ -84,6 +91,44 @@ export class Vault {
       sig: txSignature,
     };
   }
+
+  async addFunder(funder = Keypair.generate().publicKey): Promise<{
+    funderAdded: PublicKey;
+    sig: TransactionSignature;
+  }> {
+    const txSignature = await this.program.rpc.authorizeFunder(funder, {
+      accounts: {
+        authority: this.program.provider.wallet.publicKey,
+        vault: this.key,
+      },
+      signers: [],
+      options: {
+        commitment: "confirmed",
+      },
+    });
+    return {
+      funderAdded: funder,
+      sig: txSignature,
+    };
+  }
+
+  async removeFunder(funder: PublicKey): Promise<{
+    sig: TransactionSignature;
+  }> {
+    const txSignature = await this.program.rpc.unauthorizeFunder(funder, {
+      accounts: {
+        authority: this.program.provider.wallet.publicKey,
+        vault: this.key,
+      },
+      signers: [],
+      options: {
+        commitment: "confirmed",
+      },
+    });
+    return {
+      sig: txSignature,
+    };
+  }
 }
 
 export type VaultStatus = {
@@ -93,13 +138,13 @@ export type VaultStatus = {
 };
 
 type VaultData = {
-  authority: anchor.web3.PublicKey;
+  authority: PublicKey;
   status: VaultStatus;
-  rewardMint: anchor.web3.PublicKey;
-  rewardMintAccount: anchor.web3.PublicKey;
+  rewardMint: PublicKey;
+  rewardMintAccount: PublicKey;
   rewardMintCount: number;
   rewardDuration: anchor.BN;
   stakedCount: number;
   userCount: number;
-  funders: anchor.web3.PublicKey[];
+  funders: PublicKey[];
 };
