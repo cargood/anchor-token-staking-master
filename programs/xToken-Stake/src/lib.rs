@@ -27,4 +27,8 @@ pub mod x_token_stake {
     pub fn unauthorize_funder(ctx: Context<ControlFunder>, funder: Pubkey) -> ProgramResult {
         control_funder::unauthorize_funder(ctx, funder)
     }
+
+    pub fn fund(ctx: Context<Fund>, amount: u64) -> ProgramResult {
+        fund::fund(ctx, amount)
+    }
 }

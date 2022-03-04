@@ -1,21 +1,10 @@
 use anchor_lang::prelude::*;
 
-pub const VAULT_SIZE: usize = 8 + 
-    32 + // authority
-    VaultStatus::SIZE + // status
-    32 + // reward_mint
-    32 + // reward_account
-    4 + // mint_count
-    8 + // reward_duration
-    4 + // staked_count
-    4 + // user_count
-    32 * 5; // funders
-
 #[derive(Debug, AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub enum VaultStatus {
     None,
     Initialized,
-    Paused
+    Paused,
 }
 
 impl Default for VaultStatus {
@@ -24,30 +13,30 @@ impl Default for VaultStatus {
     }
 }
 
-impl VaultStatus {
-    pub const SIZE: usize = 1;
-}
-
 #[account]
 #[derive(Default)]
-pub struct Vault {    
-    /// authority
+pub struct Vault {
+    // authority
     pub authority: Pubkey,
-    /// state
+    // state
     pub status: VaultStatus,
-    /// reward token
+    // reward token
     pub reward_mint: Pubkey,
-    /// reward token account
+    // reward token account
     pub reward_mint_account: Pubkey,
-    /// number of tokens
+    // number of tokens
     pub reward_mint_count: u32,
-    /// reward duration
+    // reward duration
     pub reward_duration: u64,
-    /// number of tokens staked
+    // reward duration deadline
+    pub reward_duration_deadline: u64,
+    // reward rate
+    pub reward_rate: u128,
+    // number of tokens staked
     pub staked_count: u32,
-    /// number of users
+    // number of users
     pub user_count: u32,
-    /// array of funders address
+    // array of funders address
     pub funders: [Pubkey; 5],
 }
 
@@ -64,5 +53,5 @@ pub enum ErrorCode {
     #[msg("Funders are full.")]
     FunderAlreadyFull,
     #[msg("Funder does not exist.")]
-    FunderDoesNotExist
+    FunderDoesNotExist,
 }

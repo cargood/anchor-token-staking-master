@@ -1,5 +1,5 @@
 use crate::constant::{MIN_DURATION, VAULT_SEED};
-use crate::state::{ErrorCode, Vault, VaultStatus, VAULT_SIZE};
+use crate::state::{ErrorCode, Vault, VaultStatus};
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::TokenAccount;
@@ -12,7 +12,7 @@ pub struct CreateVault<'info> {
     authority: AccountInfo<'info>,
 
     // vault account to be created
-    #[account(init, payer=authority, space=VAULT_SIZE)]
+    #[account(init, payer=authority)]
     vault: Account<'info, Vault>,
 
     // reward token
