@@ -2,7 +2,7 @@ import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { XTokenStake } from "../../target/types/x_token_stake";
 
-const VAULT_SEED = "x_token_vault";
+const VAULT_REWARD_SEED = "x_token_vault_reward";
 
 function toPublicKey<T extends anchor.web3.PublicKey | anchor.web3.Keypair>(
   val: T
@@ -19,7 +19,7 @@ async function getPDAaddress(
   program: Program<XTokenStake>
 ): Promise<[anchor.web3.PublicKey, number]> {
   return await anchor.web3.PublicKey.findProgramAddress(
-    [Buffer.from(VAULT_SEED), source.toBuffer()],
+    [Buffer.from(VAULT_REWARD_SEED), source.toBuffer()],
     program.programId
   );
 }

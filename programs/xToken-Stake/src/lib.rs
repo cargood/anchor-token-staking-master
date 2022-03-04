@@ -31,4 +31,8 @@ pub mod x_token_stake {
     pub fn fund(ctx: Context<Fund>, amount: u64) -> ProgramResult {
         fund::fund(ctx, amount)
     }
+
+    pub fn create_user(ctx: Context<CreateUser>, user_bump: u8) -> ProgramResult {
+        create_user::create_user(ctx, user_bump)
+    }
 }

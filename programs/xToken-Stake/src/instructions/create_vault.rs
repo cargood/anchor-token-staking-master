@@ -1,4 +1,4 @@
-use crate::constant::{MIN_DURATION, VAULT_SEED};
+use crate::constant::{MIN_DURATION, VAULT_REWARD_SEED};
 use crate::state::{ErrorCode, Vault, VaultStatus};
 
 use anchor_lang::prelude::*;
@@ -17,7 +17,7 @@ pub struct CreateVault<'info> {
     vault: Account<'info, Vault>,
 
     // reward pda account
-    #[account(seeds = [VAULT_SEED.as_bytes(), vault.key().as_ref()], bump = reward_bump)]
+    #[account(seeds = [VAULT_REWARD_SEED.as_bytes(), vault.key().as_ref()], bump = reward_bump)]
     reward: SystemAccount<'info>,
 
     // reward token

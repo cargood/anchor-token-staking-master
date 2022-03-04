@@ -42,6 +42,23 @@ pub struct Vault {
     pub funders: [Pubkey; 5],
 }
 
+#[account]
+#[derive(Default)]
+pub struct User {
+    // vault
+    pub vault: Pubkey,
+    // user pub key
+    pub key: Pubkey,
+    // total amount of reward claimed
+    pub reward_earned_claimed: u64,
+    // total amount of reward pending
+    pub reward_earned_pending: u64,
+    // number of mints staked
+    pub min_staked_count: u32,
+    // mint_staked
+    pub mint_accounts: Vec<Pubkey>,
+}
+
 #[error]
 pub enum ErrorCode {
     #[msg("Duration can not be shorter than 24 hours.")]
