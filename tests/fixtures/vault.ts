@@ -1,7 +1,9 @@
 import * as anchor from "@project-serum/anchor";
-import { Program } from "@project-serum/anchor";
 import { XTokenStake } from "../../target/types/x_token_stake";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import {
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
 import {
   PublicKey,
   Keypair,
@@ -9,14 +11,15 @@ import {
   SYSVAR_RENT_PUBKEY,
   SystemProgram,
 } from "@solana/web3.js";
-
-const VAULT_SEED = "x_token_vault";
+import { Mint } from "./mint";
+import { getPDAaddress, spawnMoney } from "./lib";
 
 export class Vault {
   constructor(
     public program: anchor.Program<XTokenStake>,
     public key: PublicKey,
     public mint: PublicKey,
+    public mintAccount: PublicKey,
     public mintCount: number,
     public rewardDuration: number
   ) {}
@@ -27,100 +30,140 @@ export class Vault {
     )) as VaultData | null;
   }
 
-  static async getRewardBumpResult(
-    vault: PublicKey,
-    authority: PublicKey,
-    mint: PublicKey,
-    program: Program<XTokenStake>
-  ): Promise<[PublicKey, number]> {
-    return await PublicKey.findProgramAddress(
-      [
-        Buffer.from(VAULT_SEED),
-        vault.toBuffer(),
-        authority.toBuffer(),
-        mint.toBuffer(),
-      ],
-      program.programId
-    );
-  }
-
   static async create({
+    authority = Keypair.generate(),
     vaultKey = Keypair.generate(),
     program,
     mint,
     duration,
     mintCount,
   }: {
+    authority?: Keypair;
     vaultKey?: Keypair;
     program: anchor.Program<XTokenStake>;
-    mint: PublicKey;
+    mint: Mint;
     duration: number;
     mintCount: number;
   }): Promise<{
+    authority: Keypair;
     vault: Vault;
     sig: TransactionSignature;
   }> {
-    const [rewardMintAccount, rewardBump] = await this.getRewardBumpResult(
+    await spawnMoney(program, authority.publicKey, 10);
+
+    const [reward, rewardBump] = await getPDAaddress(
       vaultKey.publicKey,
-      program.provider.wallet.publicKey,
-      mint,
       program
     );
+
+    const mintAccount = await mint.getAssociatedTokenAddress(reward);
+
     const txSignature = await program.rpc.createVault(
       rewardBump,
       new anchor.BN(duration),
       mintCount,
       {
         accounts: {
-          authority: program.provider.wallet.publicKey,
+          authority: authority.publicKey,
           vault: vaultKey.publicKey,
-          rewardMint: mint,
-          rewardAccount: rewardMintAccount,
+          reward,
+          rewardMint: mint.key,
+          rewardAccount: mintAccount,
           rent: SYSVAR_RENT_PUBKEY,
           tokenProgram: TOKEN_PROGRAM_ID,
+          associatedToken: ASSOCIATED_TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
         },
-        signers: [vaultKey],
+        signers: [authority, vaultKey],
         options: {
           commitment: "confirmed",
         },
       }
     );
     return {
-      vault: new Vault(program, vaultKey.publicKey, mint, mintCount, duration),
+      authority,
+      vault: new Vault(
+        program,
+        vaultKey.publicKey,
+        mint.key,
+        mintAccount,
+        mintCount,
+        duration
+      ),
       sig: txSignature,
     };
   }
 
-  async addFunder(funder = Keypair.generate().publicKey): Promise<{
-    funderAdded: PublicKey;
+  async addFunder(
+    authority: Keypair,
+    funder = Keypair.generate()
+  ): Promise<{
+    funderAdded: Keypair;
     sig: TransactionSignature;
   }> {
-    const txSignature = await this.program.rpc.authorizeFunder(funder, {
-      accounts: {
-        authority: this.program.provider.wallet.publicKey,
-        vault: this.key,
-      },
-      signers: [],
-      options: {
-        commitment: "confirmed",
-      },
-    });
+    const txSignature = await this.program.rpc.authorizeFunder(
+      funder.publicKey,
+      {
+        accounts: {
+          authority: authority.publicKey,
+          vault: this.key,
+        },
+        signers: [authority],
+        options: {
+          commitment: "confirmed",
+        },
+      }
+    );
     return {
       funderAdded: funder,
       sig: txSignature,
     };
   }
 
-  async removeFunder(funder: PublicKey): Promise<{
+  async removeFunder(
+    authority: Keypair,
+    funder: PublicKey
+  ): Promise<{
     sig: TransactionSignature;
   }> {
     const txSignature = await this.program.rpc.unauthorizeFunder(funder, {
       accounts: {
-        authority: this.program.provider.wallet.publicKey,
+        authority: authority.publicKey,
         vault: this.key,
       },
-      signers: [],
+      signers: [authority],
+      options: {
+        commitment: "confirmed",
+      },
+    });
+    return {
+      sig: txSignature,
+    };
+  }
+
+  async fund({
+    authority,
+    funder,
+    funderAccount,
+    amount,
+  }: {
+    authority: Keypair;
+    funder: Keypair;
+    funderAccount: PublicKey;
+    amount: anchor.BN;
+  }): Promise<{
+    sig: TransactionSignature;
+  }> {
+    const txSignature = await this.program.rpc.fund(amount, {
+      accounts: {
+        funder: funder.publicKey,
+        authority: authority.publicKey,
+        vault: this.key,
+        rewardAccount: this.mintAccount,
+        funderAccount,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      },
+      signers: [funder],
       options: {
         commitment: "confirmed",
       },
@@ -141,9 +184,12 @@ type VaultData = {
   authority: PublicKey;
   status: VaultStatus;
   rewardMint: PublicKey;
+  rewardSeed: number;
   rewardMintAccount: PublicKey;
   rewardMintCount: number;
   rewardDuration: anchor.BN;
+  rewardDurationDeadline: anchor.BN;
+  rewardRate: anchor.BN;
   stakedCount: number;
   userCount: number;
   funders: PublicKey[];

@@ -2,7 +2,7 @@ import * as anchor from "@project-serum/anchor";
 import { Mint } from "./mint";
 import { XTokenStake } from "../../target/types/x_token_stake";
 
-export class TokenWallet<
+export class TokenAccount<
   T extends anchor.web3.PublicKey | anchor.web3.Keypair
 > {
   constructor(

@@ -2,7 +2,7 @@ import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { XTokenStake } from "../../target/types/x_token_stake";
 import { toPublicKey } from "./lib";
-import { TokenWallet } from "./token-wallet";
+import { TokenAccount } from "./token-account";
 
 import {
   Token,
@@ -51,7 +51,7 @@ class Mint {
   }
 
   async mintTokens<T extends anchor.web3.PublicKey | anchor.web3.Keypair>(
-    to: TokenWallet<T>,
+    to: TokenAccount<T>,
     amount: number
   ) {
     const transaction = new anchor.web3.Transaction();
@@ -61,8 +61,8 @@ class Mint {
         this.key,
         to.key,
         this.authority.publicKey,
-        [], // multi signers
-        amount // total tokens
+        [],
+        amount
       )
     );
     await this.program.provider.send(transaction, [this.authority], {
@@ -84,7 +84,7 @@ class Mint {
 
   async createAssociatedAccount<
     T extends anchor.web3.PublicKey | anchor.web3.Keypair
-  >(owner: T): Promise<TokenWallet<T>> {
+  >(owner: T): Promise<TokenAccount<T>> {
     const tokenAccount = await this.getAssociatedTokenAddress(owner);
     const transaction = new anchor.web3.Transaction();
     transaction.add(
@@ -100,7 +100,7 @@ class Mint {
     await this.program.provider.send(transaction, [], {
       commitment: "confirmed",
     });
-    return new TokenWallet(this.program, tokenAccount, this, owner);
+    return new TokenAccount(this.program, tokenAccount, this, owner);
   }
 }
 
