@@ -56,5 +56,13 @@ pub enum ErrorCode {
     #[msg("Duration can not be shorter than 24 hours.")]
     DurationTooShort,
     #[msg("Vault has already been created.")]
-    AlreadyCreated
+    AlreadyCreated,
+    #[msg("Owner can not be a funder.")]
+    OwnerCanNotBeFunder,
+    #[msg("Funder has already been authorized.")]
+    FunderAlreadyAuthorized,
+    #[msg("Funders are full.")]
+    FunderAlreadyFull,
+    #[msg("Funder does not exist.")]
+    FunderDoesNotExist
 }
