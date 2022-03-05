@@ -42,6 +42,8 @@ pub struct Vault {
     pub funders: [Pubkey; 5],
 }
 
+pub const USER_SIZE: usize = 8 + 32 + 32 + 8 + 8 + 4 + 32 * 300 + 8;
+
 #[account]
 #[derive(Default)]
 pub struct User {
@@ -54,9 +56,11 @@ pub struct User {
     // total amount of reward pending
     pub reward_earned_pending: u64,
     // number of mints staked
-    pub min_staked_count: u32,
+    pub mint_staked_count: u32,
     // mint_staked
     pub mint_accounts: Vec<Pubkey>,
+    // last_stake_time
+    pub last_stake_time: u64,
 }
 
 #[error]
@@ -73,4 +77,10 @@ pub enum ErrorCode {
     FunderAlreadyFull,
     #[msg("Funder does not exist.")]
     FunderDoesNotExist,
+    #[msg("Can not stake now")]
+    CanNotStake,
+    #[msg("Already staked account")]
+    AlreadyStakedAccount,
+    #[msg("Max stake count reached")]
+    MaxStakeCountReached,
 }

@@ -13,6 +13,7 @@ import {
 } from "@solana/web3.js";
 import { Mint } from "./mint";
 import { getRewardAddress, getUserAddress, spawnMoney } from "./lib";
+import { TokenAccount } from "./token-account";
 
 export class Vault {
   constructor(
@@ -210,6 +211,52 @@ export class Vault {
       sig: txSignature,
     };
   }
+
+  async stake(
+    curAuthoriy?: Keypair,
+    curUser?: PublicKey
+  ): Promise<{
+    userAuthority: Keypair;
+    user: PublicKey;
+    stakeAccount: TokenAccount<PublicKey>;
+    stakeMint: Mint;
+  }> {
+    let userAuthority: Keypair;
+    let user: PublicKey;
+
+    if (!curUser) {
+      // create user
+      const { authority, user: created } = await this.createUser();
+      userAuthority = authority;
+      user = created;
+    } else {
+      userAuthority = curAuthoriy;
+      user = curUser;
+    }
+
+    // create a token to be staked and its account of userAuthority
+    const stakeMint = await Mint.create(this.program);
+    const stakeAccount = await stakeMint.createAssociatedAccount(
+      userAuthority.publicKey
+    );
+    await stakeMint.mintTokens(stakeAccount, 1);
+
+    // stake
+    await this.program.rpc.stake({
+      accounts: {
+        staker: userAuthority.publicKey,
+        vault: this.key,
+        stakeAccount: stakeAccount.key,
+        user,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      },
+      signers: [userAuthority],
+      options: { commitment: "confirmed" },
+    });
+
+    return { userAuthority, user, stakeAccount, stakeMint };
+  }
 }
 
 export type VaultStatus = {
@@ -238,6 +285,7 @@ type UserData = {
   key: PublicKey;
   rewardEarnedClaimed: anchor.BN;
   rewardEarnedPending: anchor.BN;
-  minStakedCount: number;
+  mintStakedCount: number;
   mintAccounts: PublicKey[];
+  lastStakeTime: anchor.BN;
 };

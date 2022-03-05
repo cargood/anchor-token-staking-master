@@ -1,10 +1,9 @@
-use std::convert::TryInto;
-
 use crate::{
     constant::CALC_PRECISION,
     state::{Vault, VaultStatus},
+    util::get_now_timestamp,
 };
-use anchor_lang::{prelude::*, solana_program::clock};
+use anchor_lang::prelude::*;
 use anchor_spl::token::TokenAccount;
 
 #[derive(Accounts)]
@@ -40,11 +39,7 @@ pub struct Fund<'info> {
 pub fn fund(ctx: Context<Fund>, amount: u64) -> ProgramResult {
     let vault = &mut ctx.accounts.vault;
     let current_number = vault.stake_token_count;
-    let now: u64 = clock::Clock::get()
-        .unwrap()
-        .unix_timestamp
-        .try_into()
-        .unwrap();
+    let now = get_now_timestamp();
 
     if now >= vault.reward_duration_deadline {
         vault.reward_rate = (amount as u128)

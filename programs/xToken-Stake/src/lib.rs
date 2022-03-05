@@ -1,9 +1,9 @@
 mod constant;
 mod instructions;
 mod state;
+mod util;
 
 use anchor_lang::prelude::*;
-
 use instructions::*;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
@@ -34,5 +34,9 @@ pub mod x_token_stake {
 
     pub fn create_user(ctx: Context<CreateUser>, user_bump: u8) -> ProgramResult {
         create_user::create_user(ctx, user_bump)
+    }
+
+    pub fn stake(ctx: Context<Stake>) -> ProgramResult {
+        stake::stake(ctx)
     }
 }

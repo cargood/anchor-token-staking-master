@@ -70,7 +70,7 @@ async function createVault(program: Program<XTokenStake>): Promise<{
   const { authority, vault } = await Vault.create({
     program,
     mint,
-    duration: 128,
+    duration: 1,
     stakeTokenCount: 500000,
   });
 
@@ -81,10 +81,15 @@ async function createVault(program: Program<XTokenStake>): Promise<{
   };
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export {
   toPublicKey,
   getRewardAddress,
   getUserAddress,
   spawnMoney,
   createVault,
+  sleep,
 };
