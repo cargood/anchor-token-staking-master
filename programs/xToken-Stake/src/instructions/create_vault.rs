@@ -42,7 +42,7 @@ pub fn create_vault(
     ctx: Context<CreateVault>,
     reward_bump: u8,
     reward_duration: u64,
-    mint_count: u32,
+    stake_token_count: u32,
 ) -> ProgramResult {
     // check reward_duration
     if reward_duration < MIN_DURATION {
@@ -76,7 +76,7 @@ pub fn create_vault(
     vault.authority = *ctx.accounts.authority.key;
     vault.reward_mint = *ctx.accounts.reward_mint.to_account_info().key;
     vault.reward_mint_account = ctx.accounts.reward_account.key();
-    vault.reward_mint_count = mint_count;
+    vault.stake_token_count = stake_token_count;
     vault.reward_duration = reward_duration;
     vault.reward_seed = reward_bump;
     vault.status = VaultStatus::Initialized;

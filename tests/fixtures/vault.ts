@@ -12,7 +12,7 @@ import {
   SystemProgram,
 } from "@solana/web3.js";
 import { Mint } from "./mint";
-import { getPDAaddress, spawnMoney } from "./lib";
+import { getRewardAddress, getUserAddress, spawnMoney } from "./lib";
 
 export class Vault {
   constructor(
@@ -30,20 +30,26 @@ export class Vault {
     )) as VaultData | null;
   }
 
+  async fetchUser(userAddress: PublicKey): Promise<UserData | null> {
+    return (await this.program.account.user.fetchNullable(
+      userAddress
+    )) as UserData | null;
+  }
+
   static async create({
     authority = Keypair.generate(),
     vaultKey = Keypair.generate(),
     program,
     mint,
     duration,
-    mintCount,
+    stakeTokenCount,
   }: {
     authority?: Keypair;
     vaultKey?: Keypair;
     program: anchor.Program<XTokenStake>;
     mint: Mint;
     duration: number;
-    mintCount: number;
+    stakeTokenCount: number;
   }): Promise<{
     authority: Keypair;
     vault: Vault;
@@ -51,7 +57,7 @@ export class Vault {
   }> {
     await spawnMoney(program, authority.publicKey, 10);
 
-    const [reward, rewardBump] = await getPDAaddress(
+    const [reward, rewardBump] = await getRewardAddress(
       vaultKey.publicKey,
       program
     );
@@ -61,7 +67,7 @@ export class Vault {
     const txSignature = await program.rpc.createVault(
       rewardBump,
       new anchor.BN(duration),
-      mintCount,
+      stakeTokenCount,
       {
         accounts: {
           authority: authority.publicKey,
@@ -87,7 +93,7 @@ export class Vault {
         vaultKey.publicKey,
         mint.key,
         mintAccount,
-        mintCount,
+        stakeTokenCount,
         duration
       ),
       sig: txSignature,
@@ -172,6 +178,38 @@ export class Vault {
       sig: txSignature,
     };
   }
+
+  async createUser(authority = Keypair.generate()): Promise<{
+    authority: Keypair;
+    user: PublicKey;
+    sig: TransactionSignature;
+  }> {
+    await spawnMoney(this.program, authority.publicKey, 10);
+    const [userAddress, userBump] = await getUserAddress(
+      this.key,
+      authority.publicKey,
+      this.program
+    );
+
+    const txSignature = await this.program.rpc.createUser(userBump, {
+      accounts: {
+        authority: authority.publicKey,
+        vault: this.key,
+        user: userAddress,
+        systemProgram: SystemProgram.programId,
+      },
+      signers: [authority],
+      options: {
+        commitment: "confirmed",
+      },
+    });
+
+    return {
+      authority,
+      user: userAddress,
+      sig: txSignature,
+    };
+  }
 }
 
 export type VaultStatus = {
@@ -186,11 +224,20 @@ type VaultData = {
   rewardMint: PublicKey;
   rewardSeed: number;
   rewardMintAccount: PublicKey;
-  rewardMintCount: number;
   rewardDuration: anchor.BN;
   rewardDurationDeadline: anchor.BN;
   rewardRate: anchor.BN;
   stakedCount: number;
+  stakeTokenCount: number;
   userCount: number;
   funders: PublicKey[];
+};
+
+type UserData = {
+  vault: PublicKey;
+  key: PublicKey;
+  rewardEarnedClaimed: anchor.BN;
+  rewardEarnedPending: anchor.BN;
+  minStakedCount: number;
+  mintAccounts: PublicKey[];
 };

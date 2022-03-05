@@ -1,12 +1,10 @@
-use crate::constant::{MIN_DURATION, VAULT_USER_SEED};
-use crate::state::{ErrorCode, User, Vault, VaultStatus};
+use crate::constant::VAULT_USER_SEED;
+use crate::state::{User, Vault, VaultStatus};
 
 use anchor_lang::prelude::*;
-use anchor_spl::associated_token::{create, AssociatedToken, Create};
-use anchor_spl::token::Token;
 
 #[derive(Accounts)]
-#[instruction(user_seed: u8)]
+#[instruction(user_bump: u8)]
 pub struct CreateUser<'info> {
     // authority
     #[account(mut)]
@@ -23,11 +21,8 @@ pub struct CreateUser<'info> {
     seeds = [
         VAULT_USER_SEED.as_bytes(), vault.to_account_info().key.as_ref(), authority.key.as_ref()
     ],
-    bump = user_seed)]
+    bump = user_bump)]
     user: Account<'info, User>,
-
-    // rent
-    rent: Sysvar<'info, Rent>,
 
     system_program: Program<'info, System>,
 }

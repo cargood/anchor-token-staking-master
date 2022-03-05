@@ -26,14 +26,14 @@ pub struct Vault {
     pub reward_mint: Pubkey,
     // reward token account
     pub reward_mint_account: Pubkey,
-    // number of tokens
-    pub reward_mint_count: u32,
     // reward duration
     pub reward_duration: u64,
     // reward duration deadline
     pub reward_duration_deadline: u64,
     // reward rate
     pub reward_rate: u128,
+    // number of tokens
+    pub stake_token_count: u32,
     // number of tokens staked
     pub staked_count: u32,
     // number of users

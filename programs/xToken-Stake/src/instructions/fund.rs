@@ -39,7 +39,7 @@ pub struct Fund<'info> {
 
 pub fn fund(ctx: Context<Fund>, amount: u64) -> ProgramResult {
     let vault = &mut ctx.accounts.vault;
-    let current_number = vault.reward_mint_count;
+    let current_number = vault.stake_token_count;
     let now: u64 = clock::Clock::get()
         .unwrap()
         .unix_timestamp

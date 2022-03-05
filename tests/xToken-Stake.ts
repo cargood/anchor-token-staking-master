@@ -5,6 +5,7 @@ import { Mint } from "./fixtures/mint";
 import { Vault } from "./fixtures/vault";
 import { expect } from "chai";
 import { PublicKey } from "@solana/web3.js";
+import { createVault } from "./fixtures/lib";
 
 describe("xToken-Stake", () => {
   // Configure the client to use the local cluster.
@@ -13,23 +14,14 @@ describe("xToken-Stake", () => {
   const program = anchor.workspace.XTokenStake as Program<XTokenStake>;
 
   it("Create Vault", async () => {
-    // create reward token
-    const mint = await Mint.create(program);
-
-    // create vault
-    const { vault } = await Vault.create({
-      program,
-      mint,
-      duration: 100,
-      mintCount: 500000,
-    });
+    const { vault } = await createVault(program);
 
     // fetch vault data
     const vaultData = await vault.fetch();
 
     // check the result
-    expect(vaultData.rewardDuration.toNumber()).to.equal(100);
-    expect(vaultData.rewardMintCount).to.equal(500000);
+    expect(vaultData.rewardDuration.toNumber()).to.equal(128);
+    expect(vaultData.stakeTokenCount).to.equal(500000);
     expect(vaultData.rewardMintAccount.toString()).to.equal(
       vault.mintAccount.toString()
     );
@@ -38,16 +30,7 @@ describe("xToken-Stake", () => {
   });
 
   it("Authorize and Unauthorize Funder", async () => {
-    // create reward token
-    const mint = await Mint.create(program);
-
-    // create vault
-    const { authority, vault } = await Vault.create({
-      program,
-      mint: mint,
-      duration: 100,
-      mintCount: 500000,
-    });
+    const { authority, vault } = await createVault(program);
 
     // add funder
     const { funderAdded } = await vault.addFunder(authority);
@@ -73,16 +56,7 @@ describe("xToken-Stake", () => {
   });
 
   it("Fund Amount", async () => {
-    // create reward token
-    const mint = await Mint.create(program);
-
-    // create vault
-    const { authority, vault } = await Vault.create({
-      program,
-      mint,
-      duration: 128,
-      mintCount: 500000,
-    });
+    const { mint, authority, vault } = await createVault(program);
 
     // add funder
     const { funderAdded } = await vault.addFunder(authority);
@@ -107,5 +81,24 @@ describe("xToken-Stake", () => {
     expect(vaultData.rewardRate.toString()).to.equal(
       new anchor.BN(rightSide, 2).toString()
     );
+  });
+
+  it("Create User", async () => {
+    const { vault } = await createVault(program);
+
+    // create user
+    const { authority: userAuthority, user } = await vault.createUser();
+
+    const userData = await vault.fetchUser(user);
+    const vaultData = await vault.fetch();
+
+    expect(vaultData.userCount).to.equal(1);
+    expect(userData.vault.toString()).to.equal(vault.key.toString());
+    expect(userData.mintAccounts.length).to.equal(0);
+    expect(userData.key.toString()).to.equal(
+      userAuthority.publicKey.toString()
+    );
+    expect(userData.rewardEarnedClaimed.toNumber()).to.equal(0);
+    expect(userData.rewardEarnedPending.toNumber()).to.equal(0);
   });
 });

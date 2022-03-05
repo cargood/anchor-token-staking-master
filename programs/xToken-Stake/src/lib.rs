@@ -15,9 +15,9 @@ pub mod x_token_stake {
         ctx: Context<CreateVault>,
         reward_bump: u8,
         reward_duration: u64,
-        mint_count: u32,
+        stake_token_count: u32,
     ) -> ProgramResult {
-        create_vault::create_vault(ctx, reward_bump, reward_duration, mint_count)
+        create_vault::create_vault(ctx, reward_bump, reward_duration, stake_token_count)
     }
 
     pub fn authorize_funder(ctx: Context<ControlFunder>, funder: Pubkey) -> ProgramResult {
