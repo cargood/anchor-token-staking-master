@@ -36,8 +36,8 @@ pub fn update_rewards(vault: &mut Account<Vault>, user: &mut Account<User>) -> P
 
     // calculate time elapsed since last update
     let time_diff = std::cmp::max(now - user.last_stake_time, 0 as u64);
-    // update user reward to pass it to pending reward
 
+    // update user reward to pass it to pending reward
     user.reward_earned_pending = earned(
         time_diff,
         user.mint_staked_count,

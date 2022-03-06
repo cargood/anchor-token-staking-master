@@ -3,7 +3,12 @@ import { Program } from "@project-serum/anchor";
 import { XTokenStake } from "../target/types/x_token_stake";
 import { expect } from "chai";
 import { PublicKey } from "@solana/web3.js";
-import { checkTokenAccounts, createVault, sleep } from "./fixtures/lib";
+import {
+  checkTokenAccounts,
+  createVault,
+  getRewardAddress,
+  sleep,
+} from "./fixtures/lib";
 import { UserData, VaultData } from "./fixtures/vault";
 
 describe("xToken-Stake", () => {
@@ -101,7 +106,7 @@ describe("xToken-Stake", () => {
     expect(userData.rewardEarnedPending.toNumber()).to.equal(0);
   });
 
-  it("Stake and Unstake", async () => {
+  xit("Stake and Unstake", async () => {
     let userData: UserData;
     let vaultData: VaultData;
 
@@ -117,13 +122,6 @@ describe("xToken-Stake", () => {
     const amount = new anchor.BN("1000000");
     await mint.mintTokens(funderTokenAccount, amount.toNumber());
 
-    // mint and funderAdded
-    await checkTokenAccounts(
-      program,
-      funderAdded.publicKey,
-      funderTokenAccount.key
-    );
-
     // fund
     await vault.fund({
       authority,
@@ -131,12 +129,6 @@ describe("xToken-Stake", () => {
       funderAccount: funderTokenAccount.key,
       amount: new anchor.BN("1000000"),
     });
-
-    const rightSide = "1".padEnd(66, "0");
-    vaultData = await vault.fetch();
-    expect(vaultData.rewardRate.toString()).to.equal(
-      new anchor.BN(rightSide, 2).toString()
-    );
 
     //----------- create user and stake ------------//
     const { userAuthority, user, stakeAccount } = await vault.stake();
@@ -202,5 +194,40 @@ describe("xToken-Stake", () => {
     );
     expect(vaultData.stakedCount).to.equal(1);
     expect(userData.rewardEarnedPending.toNumber()).to.equal(firstEarned);
+  });
+
+  it("claim", async () => {
+    let userData: UserData;
+
+    //-----------    create vault     ------------//
+    const { mint, authority, vault } = await createVault(program);
+
+    //----------- add funder and fund ------------//
+    const { funderAdded } = await vault.addFunder(authority);
+    const funderTokenAccount = await mint.createAssociatedAccount(
+      funderAdded.publicKey
+    );
+
+    const amount = new anchor.BN("1000000");
+    await mint.mintTokens(funderTokenAccount, amount.toNumber());
+
+    // fund
+    await vault.fund({
+      authority,
+      funder: funderAdded,
+      funderAccount: funderTokenAccount.key,
+      amount: new anchor.BN("1000000"),
+    });
+
+    //----------- create user and stake ------------//
+    const { userAuthority, user, stakeAccount } = await vault.stake();
+
+    //----------- claim after 5 seconds ------------//
+    await sleep(5000);
+    await vault.claim(authority.publicKey, userAuthority, user);
+
+    userData = await vault.fetchUser(user);
+    expect(userData.rewardEarnedPending.toNumber()).to.equal(0);
+    expect(userData.rewardEarnedClaimed.toNumber()).to.above(0);
   });
 });

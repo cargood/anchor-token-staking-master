@@ -7,6 +7,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::TokenAccount;
 
 #[derive(Accounts)]
+#[instruction(amount: u64)]
 pub struct Fund<'info> {
     // funder
     #[account(signer,
@@ -25,11 +26,12 @@ pub struct Fund<'info> {
 
     // reward account
     #[account(mut)]
-    reward_account: Account<'info, TokenAccount>,
+    reward_account: Box<Account<'info, TokenAccount>>,
 
     // funder account
-    #[account(mut)]
-    funder_account: Account<'info, TokenAccount>,
+    #[account(mut,
+    constraint = funder_account.amount >= amount)]
+    funder_account: Box<Account<'info, TokenAccount>>,
 
     // token program
     #[account(address = spl_token::id())]

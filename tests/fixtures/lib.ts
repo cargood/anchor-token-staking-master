@@ -97,6 +97,10 @@ async function checkTokenAccounts(
   const checkedAccounts = accounts.filter(
     (t) => t.pubkey.toString() === tokenAccount.toString()
   );
+  const tempData = checkedAccounts.map(
+    (item) => item.account.data.parsed.info.tokenAmount
+  );
+  console.log(tempData);
 
   return checkedAccounts.length > 0;
 }
