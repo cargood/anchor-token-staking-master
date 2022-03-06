@@ -15,6 +15,7 @@ import { Mint } from "./mint";
 import { getRewardAddress, getUserAddress, spawnMoney } from "./lib";
 import { TokenAccount } from "./token-account";
 
+const VAULT_STAKE_SEED = "x_token_vault_stake";
 export class Vault {
   constructor(
     public program: anchor.Program<XTokenStake>,
@@ -257,6 +258,36 @@ export class Vault {
 
     return { userAuthority, user, stakeAccount, stakeMint };
   }
+
+  async unstake(
+    authority: Keypair,
+    user: PublicKey,
+    stakeAccount: TokenAccount<PublicKey>
+  ): Promise<boolean> {
+    const [vaultPda, vaultStakeBump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(VAULT_STAKE_SEED),
+        this.key.toBuffer(),
+        authority.publicKey.toBuffer(),
+      ],
+      this.program.programId
+    );
+
+    await this.program.rpc.unstake(vaultStakeBump, {
+      accounts: {
+        staker: authority.publicKey,
+        vault: this.key,
+        unstakeAccount: stakeAccount.key,
+        vaultPda,
+        user,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      },
+      signers: [authority],
+      options: { commitment: "confirmed" },
+    });
+    return true;
+  }
 }
 
 export type VaultStatus = {
@@ -265,7 +296,7 @@ export type VaultStatus = {
   paused?: {};
 };
 
-type VaultData = {
+export type VaultData = {
   authority: PublicKey;
   status: VaultStatus;
   rewardMint: PublicKey;
@@ -280,7 +311,7 @@ type VaultData = {
   funders: PublicKey[];
 };
 
-type UserData = {
+export type UserData = {
   vault: PublicKey;
   key: PublicKey;
   rewardEarnedClaimed: anchor.BN;

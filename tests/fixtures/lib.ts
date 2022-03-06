@@ -3,14 +3,13 @@ import { Program } from "@project-serum/anchor";
 import { XTokenStake } from "../../target/types/x_token_stake";
 import { Mint } from "./mint";
 import { Vault } from "./vault";
-import { Keypair } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 const VAULT_REWARD_SEED = "x_token_vault_reward";
 const VAULT_USER_SEED = "x_token_vault_user";
 
-function toPublicKey<T extends anchor.web3.PublicKey | anchor.web3.Keypair>(
-  val: T
-): anchor.web3.PublicKey {
+function toPublicKey<T extends PublicKey | Keypair>(val: T): PublicKey {
   if ("publicKey" in val) {
     return val.publicKey;
   } else {
@@ -19,21 +18,21 @@ function toPublicKey<T extends anchor.web3.PublicKey | anchor.web3.Keypair>(
 }
 
 async function getRewardAddress(
-  source: anchor.web3.PublicKey,
+  source: PublicKey,
   program: Program<XTokenStake>
-): Promise<[anchor.web3.PublicKey, number]> {
-  return await anchor.web3.PublicKey.findProgramAddress(
+): Promise<[PublicKey, number]> {
+  return await PublicKey.findProgramAddress(
     [Buffer.from(VAULT_REWARD_SEED), source.toBuffer()],
     program.programId
   );
 }
 
 async function getUserAddress(
-  vault: anchor.web3.PublicKey,
-  authority: anchor.web3.PublicKey,
+  vault: PublicKey,
+  authority: PublicKey,
   program: Program<XTokenStake>
-): Promise<[anchor.web3.PublicKey, number]> {
-  return await anchor.web3.PublicKey.findProgramAddress(
+): Promise<[PublicKey, number]> {
+  return await PublicKey.findProgramAddress(
     [Buffer.from(VAULT_USER_SEED), vault.toBuffer(), authority.toBuffer()],
     program.programId
   );
@@ -41,7 +40,7 @@ async function getUserAddress(
 
 async function spawnMoney(
   program: anchor.Program<XTokenStake>,
-  to: anchor.web3.PublicKey,
+  to: PublicKey,
   sol: number
 ): Promise<anchor.web3.TransactionSignature> {
   const lamports = sol * anchor.web3.LAMPORTS_PER_SOL;
@@ -85,6 +84,23 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function checkTokenAccounts(
+  program: Program<XTokenStake>,
+  owner: PublicKey,
+  tokenAccount: PublicKey
+): Promise<boolean> {
+  const { value: accounts } =
+    await program.provider.connection.getParsedTokenAccountsByOwner(owner, {
+      programId: new PublicKey(TOKEN_PROGRAM_ID),
+    });
+
+  const checkedAccounts = accounts.filter(
+    (t) => t.pubkey.toString() === tokenAccount.toString()
+  );
+
+  return checkedAccounts.length > 0;
+}
+
 export {
   toPublicKey,
   getRewardAddress,
@@ -92,4 +108,5 @@ export {
   spawnMoney,
   createVault,
   sleep,
+  checkTokenAccounts,
 };

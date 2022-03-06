@@ -1,11 +1,10 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { XTokenStake } from "../target/types/x_token_stake";
-import { Mint } from "./fixtures/mint";
 import { expect } from "chai";
-import { PublicKey, SystemProgram } from "@solana/web3.js";
-import { createVault, sleep } from "./fixtures/lib";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { PublicKey } from "@solana/web3.js";
+import { checkTokenAccounts, createVault, sleep } from "./fixtures/lib";
+import { UserData, VaultData } from "./fixtures/vault";
 
 describe("xToken-Stake", () => {
   // Configure the client to use the local cluster.
@@ -102,10 +101,14 @@ describe("xToken-Stake", () => {
     expect(userData.rewardEarnedPending.toNumber()).to.equal(0);
   });
 
-  it("Stake", async () => {
+  it("Stake and Unstake", async () => {
+    let userData: UserData;
+    let vaultData: VaultData;
+
+    //-----------    create vault     ------------//
     const { mint, authority, vault } = await createVault(program);
 
-    // add funder
+    //----------- add funder and fund ------------//
     const { funderAdded } = await vault.addFunder(authority);
     const funderTokenAccount = await mint.createAssociatedAccount(
       funderAdded.publicKey
@@ -113,6 +116,13 @@ describe("xToken-Stake", () => {
 
     const amount = new anchor.BN("1000000");
     await mint.mintTokens(funderTokenAccount, amount.toNumber());
+
+    // mint and funderAdded
+    await checkTokenAccounts(
+      program,
+      funderAdded.publicKey,
+      funderTokenAccount.key
+    );
 
     // fund
     await vault.fund({
@@ -123,32 +133,60 @@ describe("xToken-Stake", () => {
     });
 
     const rightSide = "1".padEnd(66, "0");
-    let vaultData = await vault.fetch();
+    vaultData = await vault.fetch();
     expect(vaultData.rewardRate.toString()).to.equal(
       new anchor.BN(rightSide, 2).toString()
     );
 
-    console.log("Funding exits");
-
-    // create and stake
+    //----------- create user and stake ------------//
     const { userAuthority, user, stakeAccount } = await vault.stake();
 
     // get user and vault data
     vaultData = await vault.fetch();
-    let userData = await vault.fetchUser(user);
+    userData = await vault.fetchUser(user);
 
+    // check staked account is not owned by user anymore
+    let stakeAccountOwned = await checkTokenAccounts(
+      program,
+      userAuthority.publicKey,
+      stakeAccount.key
+    );
+    expect(!stakeAccountOwned).to.be.true;
+
+    // check user data and vault data
     expect(userData.mintStakedCount).to.equal(1);
     expect(userData.mintAccounts.length).to.equal(1);
     expect(userData.mintAccounts[0].toString()).to.equal(
       stakeAccount.key.toString()
     );
     expect(vaultData.stakedCount).to.equal(1);
-    console.log("First staking");
 
-    // stake again after 10 seconds
+    //----------- unstake after 5 seconds ------------//
+    await sleep(5000);
+    await vault.unstake(userAuthority, user, stakeAccount);
+
+    // check staked account is owned by user again
+    expect(
+      await checkTokenAccounts(
+        program,
+        userAuthority.publicKey,
+        stakeAccount.key
+      )
+    ).to.be.true;
+
+    // check user and vault data
+    userData = await vault.fetchUser(user);
+    vaultData = await vault.fetch();
+
+    expect(userData.mintStakedCount).to.equal(0);
+    expect(userData.mintAccounts.length).to.equal(0);
+    expect(vaultData.stakedCount).to.equal(0);
+    const firstEarned = userData.rewardEarnedPending.toNumber();
+
+    //------------- stake again after 5 seconds ------------//
     await sleep(5000);
 
-    console.log("Second staking");
+    console.log("Now staking again");
     const { stakeAccount: secondStakeAccount } = await vault.stake(
       userAuthority,
       user
@@ -157,13 +195,12 @@ describe("xToken-Stake", () => {
     userData = await vault.fetchUser(user);
     vaultData = await vault.fetch();
 
-    expect(userData.mintStakedCount).to.equal(2);
-    expect(userData.mintAccounts.length).to.equal(2);
-    expect(userData.mintAccounts[1].toString()).to.equal(
+    expect(userData.mintStakedCount).to.equal(1);
+    expect(userData.mintAccounts.length).to.equal(1);
+    expect(userData.mintAccounts[0].toString()).to.equal(
       secondStakeAccount.key.toString()
     );
-    expect(vaultData.stakedCount).to.equal(2);
-
-    console.log(userData.rewardEarnedPending);
+    expect(vaultData.stakedCount).to.equal(1);
+    expect(userData.rewardEarnedPending.toNumber()).to.equal(firstEarned);
   });
 });

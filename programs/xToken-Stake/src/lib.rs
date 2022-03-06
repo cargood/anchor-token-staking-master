@@ -39,4 +39,12 @@ pub mod x_token_stake {
     pub fn stake(ctx: Context<Stake>) -> ProgramResult {
         stake::stake(ctx)
     }
+
+    pub fn unstake(ctx: Context<Unstake>, vault_stake_bump: u8) -> ProgramResult {
+        unstake::unstake(ctx, vault_stake_bump)
+    }
+
+    pub fn claim(ctx: Context<Claim>) -> ProgramResult {
+        claim::claim(ctx)
+    }
 }

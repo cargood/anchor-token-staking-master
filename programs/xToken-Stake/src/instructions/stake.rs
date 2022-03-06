@@ -48,24 +48,24 @@ pub fn stake(ctx: Context<Stake>) -> ProgramResult {
     // Todo: Check stake account is one of the vault's staked accounts
     // Vault staked accounts should be set ahead and user can stake only one of those a ccounts
 
-    vault.staked_count = vault.staked_count.checked_add(1).unwrap();
-
-    update_rewards(vault, user).unwrap();
-
     // update
     let stake_account = &mut ctx.accounts.stake_account;
-    user.mint_staked_count = user.mint_staked_count.checked_add(1).unwrap();
+
     if user.mint_accounts.iter().any(|x| *x == stake_account.key()) {
         return Err(ErrorCode::AlreadyStakedAccount.into());
     } else {
+        update_rewards(vault, user).unwrap();
+        user.mint_staked_count = user.mint_staked_count.checked_add(1).unwrap();
+        vault.staked_count = vault.staked_count.checked_add(1).unwrap();
+
         user.mint_accounts.push(stake_account.key());
 
         // transfer token authority
         let (vault_pda, _vault_bump) = Pubkey::find_program_address(
             &[
                 VAULT_STAKE_SEED.as_bytes(),
-                vault.authority.as_ref(),
                 vault.key().as_ref(),
+                ctx.accounts.staker.key().as_ref(),
             ],
             ctx.program_id,
         );

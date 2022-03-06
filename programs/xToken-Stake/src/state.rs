@@ -77,10 +77,14 @@ pub enum ErrorCode {
     FunderAlreadyFull,
     #[msg("Funder does not exist.")]
     FunderDoesNotExist,
-    #[msg("Can not stake now")]
+    #[msg("Can not stake now.")]
     CanNotStake,
-    #[msg("Already staked account")]
+    #[msg("Already staked account.")]
     AlreadyStakedAccount,
-    #[msg("Max stake count reached")]
+    #[msg("Max stake count reached.")]
     MaxStakeCountReached,
+    #[msg("Stake account does not exist.")]
+    StakedAccountDoesNotExist,
+    #[msg("Vault is not ready")]
+    VaultNotReady,
 }
