@@ -87,4 +87,8 @@ pub enum ErrorCode {
     StakedAccountDoesNotExist,
     #[msg("Vault is not ready")]
     VaultNotReady,
+    #[msg("Staked token exists")]
+    StakeExist,
+    #[msg("Earned pending esists")]
+    EarnedPendingExist,
 }

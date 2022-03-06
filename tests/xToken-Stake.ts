@@ -196,7 +196,7 @@ describe("xToken-Stake", () => {
     expect(userData.rewardEarnedPending.toNumber()).to.equal(firstEarned);
   });
 
-  it("claim", async () => {
+  xit("claim", async () => {
     let userData: UserData;
 
     //-----------    create vault     ------------//
@@ -229,5 +229,18 @@ describe("xToken-Stake", () => {
     userData = await vault.fetchUser(user);
     expect(userData.rewardEarnedPending.toNumber()).to.equal(0);
     expect(userData.rewardEarnedClaimed.toNumber()).to.above(0);
+  });
+
+  it("close user", async () => {
+    const { vault } = await createVault(program);
+
+    // create user
+    const { authority: userAuthority, user } = await vault.createUser();
+
+    // close user
+    await vault.closeUser(userAuthority, user);
+
+    const vaultData = await vault.fetch();
+    expect(vaultData.userCount).to.equal(0);
   });
 });

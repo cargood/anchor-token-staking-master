@@ -47,4 +47,8 @@ pub mod x_token_stake {
     pub fn claim(ctx: Context<Claim>) -> ProgramResult {
         claim::claim(ctx)
     }
+
+    pub fn close_user(ctx: Context<CloseUser>) -> ProgramResult {
+        close_user::close_user(ctx)
+    }
 }

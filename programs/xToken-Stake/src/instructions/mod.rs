@@ -1,4 +1,5 @@
 pub mod claim;
+pub mod close_user;
 pub mod control_funder;
 pub mod create_user;
 pub mod create_vault;
@@ -7,6 +8,7 @@ pub mod stake;
 pub mod unstake;
 
 pub use claim::*;
+pub use close_user::*;
 pub use control_funder::*;
 pub use create_user::*;
 pub use create_vault::*;

@@ -213,6 +213,21 @@ export class Vault {
     };
   }
 
+  async closeUser(authority: Keypair, user: PublicKey): Promise<boolean> {
+    await this.program.rpc.closeUser({
+      accounts: {
+        authority: authority.publicKey,
+        vault: this.key,
+        user,
+      },
+      signers: [authority],
+      options: {
+        commitment: "confirmed",
+      },
+    });
+    return true;
+  }
+
   async stake(
     curAuthoriy?: Keypair,
     curUser?: PublicKey
