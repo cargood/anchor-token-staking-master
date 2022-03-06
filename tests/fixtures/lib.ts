@@ -97,12 +97,30 @@ async function checkTokenAccounts(
   const checkedAccounts = accounts.filter(
     (t) => t.pubkey.toString() === tokenAccount.toString()
   );
-  const tempData = checkedAccounts.map(
-    (item) => item.account.data.parsed.info.tokenAmount
-  );
-  console.log(tempData);
 
   return checkedAccounts.length > 0;
+}
+
+async function getTokenAmounts(
+  program: Program<XTokenStake>,
+  owner: PublicKey,
+  tokenAccount: PublicKey
+): Promise<number> {
+  const { value: accounts } =
+    await program.provider.connection.getParsedTokenAccountsByOwner(owner, {
+      programId: new PublicKey(TOKEN_PROGRAM_ID),
+    });
+
+  const checkedAccounts = accounts.filter(
+    (t) => t.pubkey.toString() === tokenAccount.toString()
+  );
+
+  if (checkedAccounts.length > 0) {
+    console.log(checkedAccounts[0].account.data.parsed.info.tokenAmount);
+    return checkedAccounts[0].account.data.parsed.info.tokenAmount as number;
+  }
+
+  return 0;
 }
 
 export {
@@ -113,4 +131,5 @@ export {
   createVault,
   sleep,
   checkTokenAccounts,
+  getTokenAmounts,
 };

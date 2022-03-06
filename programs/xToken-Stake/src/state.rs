@@ -21,7 +21,7 @@ pub struct Vault {
     // state
     pub status: VaultStatus,
     // escrow
-    pub reward_seed: u8,
+    pub reward_bump: u8,
     // reward token
     pub reward_mint: Pubkey,
     // reward token account

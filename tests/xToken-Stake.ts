@@ -2,11 +2,12 @@ import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { XTokenStake } from "../target/types/x_token_stake";
 import { expect } from "chai";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Keypair } from "@solana/web3.js";
 import {
   checkTokenAccounts,
   createVault,
   getRewardAddress,
+  getTokenAmounts,
   sleep,
 } from "./fixtures/lib";
 import { UserData, VaultData } from "./fixtures/vault";
@@ -231,7 +232,7 @@ describe("xToken-Stake", () => {
     expect(userData.rewardEarnedClaimed.toNumber()).to.above(0);
   });
 
-  it("close user", async () => {
+  xit("close user", async () => {
     const { vault } = await createVault(program);
 
     // create user
@@ -242,5 +243,48 @@ describe("xToken-Stake", () => {
 
     const vaultData = await vault.fetch();
     expect(vaultData.userCount).to.equal(0);
+  });
+
+  it("close program", async () => {
+    //-----------     create vault    ------------//
+    const { authority, vault, mint } = await createVault(program);
+
+    //----------- add funder and fund ------------//
+    const { funderAdded } = await vault.addFunder(authority);
+    const funderTokenAccount = await mint.createAssociatedAccount(
+      funderAdded.publicKey
+    );
+
+    const amount = new anchor.BN("1000000");
+    await mint.mintTokens(funderTokenAccount, amount.toNumber());
+
+    // fund
+    await vault.fund({
+      authority,
+      funder: funderAdded,
+      funderAccount: funderTokenAccount.key,
+      amount: new anchor.BN("1000000"),
+    });
+
+    const refundee = Keypair.generate();
+    const refundeeAccount = await vault.mint.getAssociatedTokenAddress(
+      refundee.publicKey
+    );
+
+    // close program
+    await vault.close(authority, refundee, refundeeAccount);
+
+    const [reward, _] = await getRewardAddress(vault.key, program);
+
+    const rewardTokenAccounts = await checkTokenAccounts(
+      program,
+      reward,
+      vault.mintAccount
+    );
+
+    expect(!rewardTokenAccounts).to.be.true;
+    expect(
+      await getTokenAmounts(program, refundee.publicKey, refundeeAccount)
+    ).to.equal(1000000);
   });
 });

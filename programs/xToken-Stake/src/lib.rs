@@ -51,4 +51,8 @@ pub mod x_token_stake {
     pub fn close_user(ctx: Context<CloseUser>) -> ProgramResult {
         close_user::close_user(ctx)
     }
+
+    pub fn close_vault(ctx: Context<CloseVault>) -> ProgramResult {
+        close_vault::close_vault(ctx)
+    }
 }

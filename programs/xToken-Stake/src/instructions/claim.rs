@@ -24,6 +24,8 @@ pub struct Claim<'info> {
     authority: AccountInfo<'info>,
 
     // reward pda account
+    #[account(mut,
+    seeds = [VAULT_REWARD_SEED.as_bytes(), vault.to_account_info().key.as_ref()], bump = vault.reward_bump)]
     reward: AccountInfo<'info>,
 
     // reward mint

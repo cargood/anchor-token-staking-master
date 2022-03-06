@@ -78,7 +78,7 @@ pub fn create_vault(
     vault.reward_mint_account = ctx.accounts.reward_account.key();
     vault.stake_token_count = stake_token_count;
     vault.reward_duration = reward_duration;
-    vault.reward_seed = reward_bump;
+    vault.reward_bump = reward_bump;
     vault.status = VaultStatus::Initialized;
     vault.staked_count = 0;
     vault.user_count = 0;
