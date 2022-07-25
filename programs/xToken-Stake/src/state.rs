@@ -12,6 +12,7 @@ impl Default for VaultStatus {
         Self::None
     }
 }
+pub const VAULT_SIZE: usize = 8 + 32 + 4 + 1 + 32 + 32 + 8 + 32 + 8 + 8 + 16 + 4 + 4 + 4 + 32 * 5;
 
 #[account]
 #[derive(Default)]
