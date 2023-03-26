@@ -8,3 +8,4 @@ pub const VAULT_USER_SEED: &str = "x_token_vault_user";
 pub const VAULT_STAKE_SEED: &str = "x_token_vault_stake";
 pub const VAULT_CODE_SEED: &str = "x_token_value_code_seed";
 pub const VAULT_TOKEN_OFFER: &str = "x_token_count_seed";
+pub const VAULT_SEED: &str = "Value_Reward";
