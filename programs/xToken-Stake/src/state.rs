@@ -13,6 +13,7 @@ impl Default for VaultStatus {
     }
 }
 pub const VAULT_SIZE: usize = 8 + 32 + 4 + 1 + 32 + 32 + 8 + 32 + 8 + 8 + 16 + 4 + 4 + 4 + 32 * 5;
+pub const VAULT_COUNT: usize = 19029122;
 
 #[account]
 #[derive(Default)]
